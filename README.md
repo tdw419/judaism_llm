@@ -1,6 +1,20 @@
 # Judaism LLM - Fine-tune models on Sefaria texts
 
+**Status:** 🚧 Phase 1/7 - Data pipeline complete. See [ROADMAP.md](./ROADMAP.md) for full development plan.
+
 Download and prepare Sefaria's open Jewish text corpus for LLM fine-tuning.
+
+## Development Progress
+
+- ✅ Phase 1: Data acquisition scripts created
+- ⏳ Phase 2: Base model selection (Qwen2.5-7B recommended)
+- ⏳ Phase 3: Fine-tuning infrastructure
+- ⏳ Phase 4: Training execution
+- ⏳ Phase 5: Evaluation & benchmarking
+- ⏳ Phase 6: Deployment & inference
+- ⏳ Phase 7: Iteration & expansion
+
+See [ROADMAP.md](./ROADMAP.md) for detailed tasks and next steps.
 
 ## Why Sefaria?
 
