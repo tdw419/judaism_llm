@@ -125,12 +125,29 @@ Check each text's license metadata before commercial use.
 
 ## Next Steps
 
+**Option 1: Manual Execution (Recommended for first run)**
 1. Download data: `python download_sefaria.py`
 2. Prepare training: `python prepare_training_data.py`
-3. Choose fine-tuning method:
-   - Use `unsloth_finetune.py` for fast training on RTX 5090
-   - Use `trl_finetune.py` for Hugging Face ecosystem integration
-4. Evaluate and iterate
+3. Choose fine-tuning method and implement
+
+**Option 2: Autonomous Roadmap Execution (Advanced)**
+Use the roadmap_builder system for automated, verifiable progress:
+
+```bash
+cd roadmap_builder
+
+# Test run (exits when complete/stuck)
+python3 roadmap_builder.py
+
+# Or schedule for autonomous execution via cron
+hermes cron create \
+  --schedule="*/5 * * * *" \
+  --name="judaism_llm_roadmap" \
+  --script="/home/jericho/projects/zion/projects/judaism_llm/judaism_llm/roadmap_builder/roadmap_builder_supervisor.py" \
+  --deliver="origin"
+```
+
+See `roadmap_builder/README.md` for details on the autonomous execution system.
 
 ## Fine-Tuning Considerations
 

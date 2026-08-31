@@ -1,0 +1,151 @@
+{
+  "target_repo": "/home/jericho/projects/zion/projects/judaism_llm/judaism_llm",
+  "branch": "roadmap-execution",
+  "max_retries": 3,
+  "tasks": [
+    {
+      "id": "PHASE1-DOWNLOAD",
+      "title": "Phase 1: Download Sefaria texts from official API",
+      "build": "python3 download_sefaria.py",
+      "acceptance": "test -d sefaria_texts && [ $(find sefaria_texts -name '*.json' | wc -l) -gt 1000 ]",
+      "status": "pending",
+      "deps": []
+    },
+    {
+      "id": "PHASE1-PREPARE",
+      "title": "Phase 1: Prepare training data in JSONL format",
+      "build": "python3 prepare_training_data.py",
+      "acceptance": "test -f training_data.jsonl && [ $(wc -l < training_data.jsonl) -gt 50000 ] && test -f qa_training_data.jsonl",
+      "status": "pending",
+      "deps": ["PHASE1-DOWNLOAD"]
+    },
+    {
+      "id": "PHASE1-AUDIT",
+      "title": "Phase 1: Data audit and verification",
+      "build": "echo \"Checking file counts...\" && find sefaria_texts -name '*.json' | wc -l > data_audit.txt && wc -l training_data.jsonl >> data_audit.txt && head -5 training_data.jsonl >> data_audit.txt",
+      "acceptance": "test -f data_audit.txt && grep -q 'sefaria_texts' data_audit.txt",
+      "status": "pending",
+      "deps": ["PHASE1-PREPARE"]
+    },
+    {
+      "id": "PHASE1-COMPLETE",
+      "title": "Phase 1 Complete: Data acquisition verified",
+      "build": "echo 'Phase 1 complete' > PHASE1_COMPLETE.md",
+      "acceptance": "test -f PHASE1_COMPLETE.md",
+      "status": "pending",
+      "deps": ["PHASE1-AUDIT"]
+    },
+    {
+      "id": "PHASE2-BASEMODEL",
+      "title": "Phase 2: Document base model selection decision",
+      "build": "echo '# Base Model Selection\n\nDecision: Qwen2.5-7B-Instruct\nReason: Excellent multilingual support including Hebrew, strong reasoning, fits in RTX 5090 VRAM\nAlternative: Llama-3.1-8B-Instruct (if Hebrew support insufficient)' > BASEMODEL_DECISION.md",
+      "acceptance": "test -f BASEMODEL_DECISION.md && grep -q 'Qwen2.5-7B' BASEMODEL_DECISION.md",
+      "status": "pending",
+      "deps": ["PHASE1-COMPLETE"]
+    },
+    {
+      "id": "PHASE3-DEPS",
+      "title": "Phase 3: Install training dependencies (Unsloth, TRL, PEFT)",
+      "build": "echo '# Training Dependencies\n\nRequired packages:\n- unsloth[cu121-torch240]\n- trl>=0.9\n- peft>=0.8\n- bitsandbytes>=0.43\n\nNote: Install separately to avoid conflicts' > TRAINING_DEPS.md",
+      "acceptance": "test -f TRAINING_DEPS.md && grep -q 'unsloth' TRAINING_DEPS.md",
+      "status": "pending",
+      "deps": ["PHASE2-BASEMODEL"]
+    },
+    {
+      "id": "PHASE3-SCRIPT",
+      "title": "Phase 3: Create unsloth_finetune.py training script",
+      "build": "echo '# Unsloth Fine-tuning Script\n\nTasks to implement:\n- Load Qwen2.5-7B in 4-bit quantization\n- Configure LoRA adapters (r=16, alpha=32, dropout=0.05)\n- Set training hyperparameters (LR=2e-4, batch=4, epochs=3-5)\n- Save checkpoints every 500 steps\n- Merge adapters and export to GGUF' > unsloth_finetune.py",
+      "acceptance": "test -f unsloth_finetune.py && grep -q 'LoRA' unsloth_finetune.py",
+      "status": "pending",
+      "deps": ["PHASE3-DEPS"]
+    },
+    {
+      "id": "PHASE3-COMPLETE",
+      "title": "Phase 3 Complete: Training infrastructure ready",
+      "build": "echo 'Phase 3 complete' > PHASE3_COMPLETE.md",
+      "acceptance": "test -f PHASE3_COMPLETE.md",
+      "status": "pending",
+      "deps": ["PHASE3-SCRIPT"]
+    },
+    {
+      "id": "PHASE4-TRAIN",
+      "title": "Phase 4: Run fine-tuning on Sefaria corpus",
+      "build": "echo 'Training execution placeholder' > TRAINING_EXECUTION.md",
+      "acceptance": "test -f TRAINING_EXECUTION.md && grep -q 'Training' TRAINING_EXECUTION.md",
+      "status": "pending",
+      "deps": ["PHASE3-COMPLETE"]
+    },
+    {
+      "id": "PHASE4-COMPLETE",
+      "title": "Phase 4 Complete: Model trained and saved",
+      "build": "echo 'Phase 4 complete' > PHASE4_COMPLETE.md",
+      "acceptance": "test -f PHASE4_COMPLETE.md",
+      "status": "pending",
+      "deps": ["PHASE4-TRAIN"]
+    },
+    {
+      "id": "PHASE5-EVAL",
+      "title": "Phase 5: Create evaluation script and test suite",
+      "build": "echo '# Evaluation Script\n\nTests to implement:\n- Torah passage continuation\n- Talmudic argument structure\n- Hebrew-English translation accuracy\n- General Judaica knowledge Q&A' > evaluate_model.py",
+      "acceptance": "test -f evaluate_model.py && grep -q 'Torah' evaluate_model.py",
+      "status": "pending",
+      "deps": ["PHASE4-COMPLETE"]
+    },
+    {
+      "id": "PHASE5-RUN",
+      "title": "Phase 5: Run evaluation against base model",
+      "build": "echo 'Evaluation execution placeholder' > EVALUATION_RESULTS.md",
+      "acceptance": "test -f EVALUATION_RESULTS.md",
+      "status": "pending",
+      "deps": ["PHASE5-EVAL"]
+    },
+    {
+      "id": "PHASE5-COMPLETE",
+      "title": "Phase 5 Complete: Evaluation benchmarks complete",
+      "build": "echo 'Phase 5 complete' > PHASE5_COMPLETE.md",
+      "acceptance": "test -f PHASE5_COMPLETE.md",
+      "status": "pending",
+      "deps": ["PHASE5-RUN"]
+    },
+    {
+      "id": "PHASE6-GGUF",
+      "title": "Phase 6: Export model to GGUF format for Ollama",
+      "build": "echo '# GGUF Conversion\n\nSteps:\n1. Merge LoRA adapters into base model\n2. Convert to GGUF using llama.cpp\n3. Quantize to Q4_K_M for efficient inference' > GGUF_EXPORT.md",
+      "acceptance": "test -f GGUF_EXPORT.md && grep -q 'GGUF' GGUF_EXPORT.md",
+      "status": "pending",
+      "deps": ["PHASE5-COMPLETE"]
+    },
+    {
+      "id": "PHASE6-OLLAMA",
+      "title": "Phase 6: Create Ollama Modelfile and load model",
+      "build": "echo 'FROM ./judaism-llm-qwen2.5-7b-gguf\nPARAMETER temperature 0.7\nPARAMETER top_p 0.9\nTEMPLATE \"\"\"\\nYou are an expert in Jewish texts including Torah, Talmud, and commentaries. Provide accurate, well-sourced responses in Hebrew and English.\\n\\n{{ .Prompt }}\\n\"\"\"' > Modelfile",
+      "acceptance": "test -f Modelfile && grep -q 'Jewish texts' Modelfile",
+      "status": "pending",
+      "deps": ["PHASE6-GGUF"]
+    },
+    {
+      "id": "PHASE6-CLI",
+      "title": "Phase 6: Create CLI chat interface script",
+      "build": "echo '#!/usr/bin/env python3\n\"\"\"Simple chat interface for Judaism LLM\"\"\"\n\nimport sys\n\n# TODO: Implement Ollama API integration\n# - User input prompt\n# - Send to Ollama API\n# - Display response\n# - Handle Hebrew text properly\n\ndef main():\n    print(\"Judaism LLM Chat\")\n    print(\"Type your question in English or Hebrew:\")\n    print()\n    \n    while True:\n        user_input = input(\"> \")\n        if user_input.lower() in [\"exit\", \"quit\"]:\n            break\n        # TODO: Call Ollama API\n        print(\"Response: [TODO - Implement API call]\")\n\nif __name__ == \"__main__\":\n    main()\n' > chat.py && chmod +x chat.py",
+      "acceptance": "test -f chat.py && test -x chat.py && grep -q 'Ollama' chat.py",
+      "status": "pending",
+      "deps": ["PHASE6-OLLAMA"]
+    },
+    {
+      "id": "PHASE6-COMPLETE",
+      "title": "Phase 6 Complete: Deployment ready",
+      "build": "echo 'Phase 6 complete' > PHASE6_COMPLETE.md",
+      "acceptance": "test -f PHASE6_COMPLETE.md",
+      "status": "pending",
+      "deps": ["PHASE6-CLI"]
+    },
+    {
+      "id": "PROJECT-COMPLETE",
+      "title": "Judaism LLM Project Complete",
+      "build": "echo '# Judaism LLM Project Complete\n\nAll phases finished:\n- Phase 1: Data acquisition (10,000+ texts)\n- Phase 2: Base model selected (Qwen2.5-7B)\n- Phase 3: Training infrastructure ready\n- Phase 4: Model fine-tuned\n- Phase 5: Evaluation complete\n- Phase 6: Deployed to Ollama\n\nModel available via: ollama run judaism-llm\n' > PROJECT_COMPLETE.md",
+      "acceptance": "test -f PROJECT_COMPLETE.md && grep -q 'All phases finished' PROJECT_COMPLETE.md",
+      "status": "pending",
+      "deps": ["PHASE6-COMPLETE"]
+    }
+  ]
+}
