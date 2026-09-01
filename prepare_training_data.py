@@ -28,26 +28,46 @@ def extract_text_from_node(node: Dict, text_path: List[str] = []) -> List[str]:
     """
     texts = []
     
-    if isinstance(node, list):
+    # Handle Sefaria API response structure
+    if isinstance(node, dict):
+        # Check for text/he arrays at top level
+        if 'he' in node and isinstance(node['he'], list):
+            for item in node['he']:
+                if isinstance(item, str) and len(item.strip()) > 5:
+                    cleaned = clean_text(item)
+                    if cleaned:
+                        texts.append(cleaned)
+        
+        if 'text' in node and isinstance(node['text'], list):
+            for item in node['text']:
+                if isinstance(item, str) and len(item.strip()) > 5:
+                    cleaned = clean_text(item)
+                    if cleaned:
+                        texts.append(cleaned)
+        
+        # Check for bilingual texts (he, en keys)
+        if 'he' in node and 'en' in node:
+            he_text = clean_text(node['he'])
+            en_text = clean_text(node['en'])
+            if he_text and len(he_text) > 5:
+                texts.append(he_text)
+            if en_text and len(en_text) > 5:
+                texts.append(en_text)
+        else:
+            # Recursively search for text in other keys
+            for key, value in node.items():
+                if key not in ['he', 'en', 'heTitle', 'enTitle', 'map', 'lengths', 
+                              'chapter', 'verse', 'title', 'heTitle', 'enTitle',
+                              'sectionNames', 'addressTypes', 'textDepth', 'version',
+                              'versions', 'collectiveTitle', 'heCollectiveTitle', 'baseText']:
+                    texts.extend(extract_text_from_node(value, text_path + [key]))
+    elif isinstance(node, list):
         for item in node:
             texts.extend(extract_text_from_node(item, text_path))
     elif isinstance(node, str):
         cleaned = clean_text(node)
-        if cleaned:
+        if cleaned and len(cleaned) > 5:
             texts.append(cleaned)
-    elif isinstance(node, dict):
-        # Handle bilingual texts (he, en keys)
-        if 'he' in node and 'en' in node:
-            he_text = clean_text(node['he'])
-            en_text = clean_text(node['en'])
-            if he_text and en_text:
-                # Add both versions
-                texts.append(he_text)
-                texts.append(en_text)
-        else:
-            for key, value in node.items():
-                if key not in ['he', 'en', 'heTitle', 'enTitle', 'map', 'lengths', 'chapter', 'verse']:
-                    texts.extend(extract_text_from_node(value, text_path + [key]))
     
     return texts
 
