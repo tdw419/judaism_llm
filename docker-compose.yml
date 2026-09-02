@@ -1,0 +1,19 @@
+services:
+  judaism-rag:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - MODEL_PATH=./model
+      - CHROMA_DIR=./chroma_db
+      - TOP_K=5
+    volumes:
+      - ./chroma_db:/app/chroma_db
+      - ./logs:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s

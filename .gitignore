@@ -31,6 +31,15 @@ Thumbs.db
 *.bin
 *.safetensors
 
+# RAG artifacts (rebuildable: run_phase1.py + run_phase2.py)
+chroma_db/
+*.npy
+outputs/
+
+# Scratch / unrelated
+data_audit.txt
+data-science/
+
 # Logs
 logs/
 *.log

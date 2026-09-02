@@ -11,25 +11,28 @@ import torch
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
+import os
 import sys
 
 from prompts import build_messages
 
-# Configuration
-CHROMA_DIR = "chroma_db"
+# Configuration (env-overridable for Docker; see Dockerfile)
+CHROMA_DIR = os.environ.get("CHROMA_DIR", "chroma_db")
 COLLECTION_NAME = "sefaria_texts"
-MODEL_PATH = "judaism-llm-qwen2.5-7b-merged"
-TOP_K = 5
+MODEL_PATH = os.environ.get("MODEL_PATH", "judaism-llm-qwen2.5-7b-merged")
+TOP_K = int(os.environ.get("TOP_K", "5"))
 EMBEDDING_MODEL = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 
 # Initialize FastAPI
 app = FastAPI(title="Judaism LLM RAG")
 
-# CORS
+# CORS (allow_credentials=True is incompatible with wildcard origins per the
+# spec - browsers drop credentialed responses. This API doesn't use cookies,
+# so credentials stay off and wildcard is valid.)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"]
 )

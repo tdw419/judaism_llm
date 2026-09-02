@@ -1,0 +1,15 @@
+# Build context exclusions - keeps image small and avoids copying
+# multi-GB model/DB artifacts (mounted as volumes at runtime instead)
+sefaria_texts/
+chroma_db/
+outputs/
+judaism-llm-qwen2.5-7b-merged/
+*.npy
+*.safetensors
+*.jsonl
+data-science/
+data_audit.txt
+logs/
+__pycache__/
+*.pyc
+.git/

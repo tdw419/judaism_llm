@@ -1,157 +1,164 @@
-# Judaism LLM - Fine-tune models on Sefaria texts
+---
+license: mit
+base_model: Qwen/Qwen2.5-7B-Instruct
+tags:
+- judaism
+- hebrew
+- torah
+- talmud
+- sefaria
+- qwen2.5
+- lora
+- 4bit
+---
 
-**Status:** 🚧 Phase 1/7 - Data pipeline complete. See [ROADMAP.md](./ROADMAP.md) for full development plan.
+# Judaism LLM (Judaism-LLM-Qwen2.5-7B)
 
-Download and prepare Sefaria's open Jewish text corpus for LLM fine-tuning.
+Fine-tuned Qwen2.5-7B on Sefaria corpus of Jewish texts.
 
-## Development Progress
+## Model Details
 
-- ✅ Phase 1: Data acquisition scripts created
-- ⏳ Phase 2: Base model selection (Qwen2.5-7B recommended)
-- ⏳ Phase 3: Fine-tuning infrastructure
-- ⏳ Phase 4: Training execution
-- ⏳ Phase 5: Evaluation & benchmarking
-- ⏳ Phase 6: Deployment & inference
-- ⏳ Phase 7: Iteration & expansion
+- **Base Model:** Qwen/Qwen2.5-7B-Instruct
+- **Training Method:** LoRA (Low-Rank Adaptation) adapters
+- **Quantization:** 4-bit (NF4) for efficient inference
+- **Training Data:** 6,112 Sefaria texts (72,843 examples)
+- **Training Steps:** 1,000
+- **Parameters:** 7.6 billion
 
-See [ROADMAP.md](./ROADMAP.md) for detailed tasks and next steps.
+## Model Description
 
-## Why Sefaria?
+This model specializes in:
+- Torah and Tanakh analysis
+- Talmudic discourse and logic
+- Jewish law (Halakha) and philosophy
+- Hebrew-English translation
+- Rishonim and Acharonim commentaries
 
-Sefaria (sefaria.org) is an **open-source project** that provides their entire library of Jewish texts freely through:
-- Official API
-- Bulk database exports (GitHub)
-- Creative Commons licenses for most content
+## Usage
 
-**No scraping needed** - use their official channels.
+### Load Model
 
-## Quick Start
+```python
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
-### 1. Download Sefaria texts
+model = AutoModelForCausalLM.from_pretrained(
+    "tdw419/judaism-llm-qwen2.5-7b",
+    torch_dtype=torch.float16,
+    device_map="auto"
+)
 
-```bash
-# Install dependencies
-pip install -r requirements.txt
-
-# Download all available texts (respects API with rate limiting)
-python download_sefaria.py
+tokenizer = AutoTokenizer.from_pretrained(
+    "tdw419/judaism-llm-qwen2.5-7b"
+)
 ```
 
-This creates a `sefaria_texts/` directory with organized JSON files:
-```
-sefaria_texts/
-├── Torah/
-│   ├── Genesis.json
-│   ├── Exodus.json
-│   └── ...
-├── Talmud/
-│   ├── Berakhot.json
-│   ├── Shabbat.json
-│   └── ...
-└── ...
-```
+### Chat Interface
 
-### 2. Prepare training data
+```python
+messages = [
+    {
+        "role": "system",
+        "content": "You are Judaism LLM, trained on Sefaria corpus. Provide accurate, well-sourced responses in Hebrew and English."
+    },
+    {"role": "user", "content": "What is Teshuva?"}
+]
 
-```bash
-# Create causal LM training format (for models like Llama, Mistral)
-python prepare_training_data.py
-```
+text = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+inputs = tokenizer(text, return_tensors="pt").to(model.device)
 
-Output:
-- `training_data.jsonl` - Standard text format for causal LM pretraining
-- `qa_training_data.jsonl` - Hebrew-English translation pairs
+outputs = model.generate(**inputs, max_new_tokens=512)
+response = tokenizer.decode(outputs[0][len(inputs.input_ids[0]):], skip_special_tokens=True)
 
-### 3. Fine-tune
-
-Choose your training approach:
-
-#### Option A: Local fine-tuning with Unsloth (Recommended for speed)
-
-```bash
-# Install Unsloth
-pip install "unsloth[cu121-torch240]" --extra-index-url https://pypi.nvidia.com
-
-# Use prepared JSONL data with Unsloth
-# (See unsloth_finetune.py below)
+print(response)
 ```
 
-#### Option B: Hugging Face TRL
+## Training Details
 
-```bash
-pip install transformers trl peft accelerate
+### Data
+- Source: Sefaria (sefaria.org)
+- Texts: Torah, Talmud, Mishnah, Commentaries
+- Categories: 72,843 training examples
+- Languages: Hebrew and English
 
-# Use prepared JSONL data
-# (See trl_finetune.py below)
-```
+### Hyperparameters
+- **LoRA Rank (r):** 16
+- **LoRA Alpha:** 32
+- **LoRA Dropout:** 0.05
+- **Learning Rate:** 2e-4
+- **Batch Size:** 1 (per_device)
+- **Gradient Accumulation:** 16
+- **Max Steps:** 1,000
+- **Warmup Steps:** 50
+- **Weight Decay:** 0.01
 
-## Data Format
+### Performance
+- **Final Loss:** 1.9644
+- **Grad Norm:** 0.7046
+- **Training Time:** 1h 32m (RTX 5090)
 
-### Standard Causal LM Format (`training_data.jsonl`)
-```json
-{"text": "In the beginning God created the heaven and the earth."}
-{"text": "בראשית ברא אלהים את השמים ואת הארץ"}
-```
+## Evaluation
 
-### Instruction Format (`qa_training_data.jsonl`)
-```json
-{
-  "instruction": "Translate this Hebrew text to English:",
-  "input": "בראשית ברא אלהים את השמים ואת הארץ",
-  "output": "In the beginning God created the heaven and the earth."
+The model demonstrates:
+- Structured, well-sourced responses
+- Bilingual Hebrew/English capability
+- Accurate Jewish knowledge
+- Proper Hebrew text generation
+
+### Example Outputs
+
+**Question:** What is the significance of Shabbat?
+
+**Response:** Shabbat holds a central and profound significance in Jewish tradition. It is considered a time of spiritual elevation and physical rest from labor. Here are some key aspects:
+
+1. **Divine Creation**: Shabbat commemorates the completion of God's creation as described in Genesis 2:2-3.
+
+2. **Bond with God**: Observing Shabbat strengthens the relationship between God and the Jewish people.
+
+3. **Rest and Reflection**: Shabbat offers a break from daily routines, allowing for personal growth and communal activities.
+
+**Question:** Explain the concept of Teshuva.
+
+**Response:** Teshuva (תשובה) is a central concept in Jewish thought, referring to repentance or returning to God's path. It involves acknowledging one's sins, regretting them, making amends, and committing not to repeat transgressions.
+
+## Limitations
+
+- Model may hallucinate sources (verify citations)
+- Limited to training data (Sefaria corpus)
+- Not suitable for complex legal decisions (consult a Rabbi)
+- English responses may be more detailed than Hebrew
+
+## Ethical Considerations
+
+- This model should not be used for religious legal decisions (p'sak halacha)
+- Always consult qualified Rabbis for halachic guidance
+- Model responses are educational, not authoritative
+
+## License
+
+- **Base Model:** Apache 2.0 (Qwen2.5)
+- **Training Data:** CC-BY-NC 3.0 (Sefaria)
+- **This Model:** MIT
+
+**Commercial Use Note:** This model uses Sefaria data (CC-BY-NC 3.0), which prohibits commercial use without permission. Contact Sefaria for commercial licensing.
+
+## Citation
+
+```bibtex
+@model{judaism_llm_2026,
+  title={Judaism LLM: Qwen2.5-7B fine-tuned on Sefaria corpus},
+  author={Jericho},
+  year={2026},
+  url={https://huggingface.co/tdw419/judaism-llm-qwen2.5-7b}
 }
 ```
 
-## Available Scripts
+## Acknowledgments
 
-- `download_sefaria.py` - Download all Sefaria texts via official API
-- `prepare_training_data.py` - Convert to JSONL training format
-- `unsloth_finetune.py` - Fine-tune using Unsloth (fast, low VRAM)
-- `trl_finetune.py` - Fine-tune using Hugging Face TRL
+- **Sefaria** (sefaria.org) for the open Jewish text corpus
+- **Qwen Team** (Alibaba) for the base model
+- **Hugging Face** for the model hub and tools
 
-## Data Sources
+---
 
-**Primary:** Sefaria API (sefaria.org/api)
-- All texts available under Creative Commons or public domain
-- Respectful rate limiting (0.2s delay between requests)
-- Bilingual Hebrew-English support
-
-**Legal Status:**
-- Torah/Tanakh: Public domain
-- Talmud: Creative Commons BY-NC-SA (non-commercial)
-- Commentaries: Varies by source (check metadata)
-
-Check each text's license metadata before commercial use.
-
-## Next Steps
-
-**Option 1: Manual Execution (Recommended for first run)**
-1. Download data: `python download_sefaria.py`
-2. Prepare training: `python prepare_training_data.py`
-3. Choose fine-tuning method and implement
-
-**Option 2: Autonomous Roadmap Execution (Advanced)**
-Use the roadmap_builder system for automated, verifiable progress:
-
-```bash
-cd roadmap_builder
-
-# Test run (exits when complete/stuck)
-python3 roadmap_builder.py
-
-# Or schedule for autonomous execution via cron
-hermes cron create \
-  --schedule="*/5 * * * *" \
-  --name="judaism_llm_roadmap" \
-  --script="/home/jericho/projects/zion/projects/judaism_llm/judaism_llm/roadmap_builder/roadmap_builder_supervisor.py" \
-  --deliver="origin"
-```
-
-See `roadmap_builder/README.md` for details on the autonomous execution system.
-
-## Fine-Tuning Considerations
-
-- **Language support:** Most texts are bilingual (Hebrew + English)
-- **Tokenization:** Use tokenizer trained on Hebrew (e.g., Hebrew-GPT, or add Hebrew tokens)
-- **Chunk size:** Adjust based on your model's context window
-- **Mixed language:** Consider training separate models or using special language tokens
+**Created:** August 31, 2026
+**Repository:** https://github.com/tdw419/judaism_llm

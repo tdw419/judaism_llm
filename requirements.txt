@@ -1,14 +1,12 @@
-requests>=2.31.0
-tqdm>=4.66.0
 
-# Training dependencies (install separately)
-# Uncomment for Unsloth training (recommended for RTX 5090):
-# "unsloth[cu121-torch240]" @ https://pypi.nvidia.com
-
-# Uncomment for standard Hugging Face TRL training:
-# transformers>=4.40.0
-# trl>=0.9.0
-# peft>=0.8.0
-# bitsandbytes>=0.43.0
-# accelerate>=0.28.0
-# datasets>=2.18.0
+# RAG System Requirements
+chromadb>=1.5.0
+sentence-transformers>=2.2.0
+transformers>=4.30.0
+torch>=2.0.0
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.0.0
+numpy>=1.24.0
+accelerate>=0.20.0
+bitsandbytes>=0.41.0
