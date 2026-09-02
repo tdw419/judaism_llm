@@ -14,6 +14,8 @@ from pathlib import Path
 import sys
 import re
 
+from retrieval import retrieve
+
 # Configuration
 CHROMA_DIR = "chroma_db"
 COLLECTION_NAME = "sefaria_texts"
@@ -230,11 +232,8 @@ def main():
         print(f"Query {i+1}: {query}")
         print("-" * 60)
 
-        # Embed query
-        query_embedding = embedding_model.encode(query, convert_to_numpy=True, normalize_embeddings=True)
-
-        # Vector search
-        r_results = collection.query(query_embeddings=[query_embedding.tolist()], n_results=5)
+        # Hybrid retrieval (dense + lexical + short-query expansion)
+        r_results = retrieve(query, collection, embedding_model, top_k=5)
 
         if not r_results['ids'][0]:
             print("Error: No relevant passages found")
