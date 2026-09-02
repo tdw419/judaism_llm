@@ -25,7 +25,7 @@ class RAGExecutor:
             {"id": "Phase 3", "name": "RAG Query Engine", "script": "run_phase3.py"},
             {"id": "Phase 4", "name": "Interactive CLI", "script": "run_phase4.py"},
             {"id": "Phase 5", "name": "Web Interface", "script": "run_phase5.py"},
-            {"id": "Phase 6", "name": "Evaluation", "script": "run_phase6.py"},
+            {"id": "Phase 6", "name": "Evaluation", "script": "run_phase6_improved.py"},
             {"id": "Phase 7", "name": "Deployment", "script": "run_phase7.py"}
         ]
 
