@@ -63,8 +63,15 @@ def process_batch(files):
         source = file_path.stem
         category = file_path.parent.name
 
+        # Extract and clean text
         he_text = ' '.join([t for t in data.get('he', []) if isinstance(t, str)])
         en_text = ' '.join([t for t in data.get('text', []) if isinstance(t, str)])
+
+        # Strip HTML tags
+        import re
+        html_pattern = re.compile(r'<.*?>')
+        he_text = html_pattern.sub('', he_text)
+        en_text = html_pattern.sub('', en_text)
 
         if he_text and estimate_tokens(he_text) > 10:
             segments.extend(segment_text(he_text, source, category, "hebrew", 0))

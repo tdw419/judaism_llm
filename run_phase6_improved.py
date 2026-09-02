@@ -21,13 +21,18 @@ MODEL_PATH = "judaism-llm-qwen2.5-7b-merged"
 EMBEDDING_MODEL = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 EVALUATION_REPORT = "RAG_EVALUATION_IMPROVED.md"
 
-# Test queries
+# Test queries (expanded to 10)
 TEST_QUERIES = [
     {"query": "What is Teshuva?", "expected_concepts": ["repentance", "return", "sin", "atonement"], "language": "english"},
     {"query": "Explain Shabbat", "expected_concepts": ["rest", "seventh day", "sanctified", "work"], "language": "english"},
     {"query": "What are the main sources of Jewish law?", "expected_concepts": ["Torah", "Oral Law", "Mishnah", "Talmud"], "language": "english"},
     {"query": "תורה", "expected_concepts": ["תורה", "חומש", "חמשה חומשי תורה"], "language": "hebrew"},
-    {"query": "משנה", "expected_concepts": ["משנה", "תורה שבעל פה", "תנאים"], "language": "hebrew"}
+    {"query": "משנה", "expected_concepts": ["משנה", "תורה שבעל פה", "תנאים"], "language": "hebrew"},
+    {"query": "What is the significance of Rosh Hashanah?", "expected_concepts": ["new year", "judgment", "shofar", "creation"], "language": "english"},
+    {"query": "Explain the concept of Kashrut", "expected_concepts": ["kosher", "dietary laws", "permitted", "forbidden"], "language": "english"},
+    {"query": "מה המשמעות של יום כיפור", "expected_concepts": ["יום כיפור", "כפרה", "צום", "סליחה"], "language": "hebrew"},
+    {"query": "פסח", "expected_concepts": ["פסח", "יציאת מצרים", "מצה", "חג"], "language": "hebrew"},
+    {"query": "What are the Ten Commandments?", "expected_concepts": ["commandments", "sinai", "moses", "decalogue"], "language": "english"}
 ]
 
 def calculate_ngram_overlap(response, context, n=3):
@@ -264,7 +269,7 @@ def main():
         inputs = tokenizer(text, return_tensors="pt").to(model.device)
 
         with torch.no_grad():
-            outputs = model.generate(**inputs, max_new_tokens=512, temperature=0.7, top_p=0.9, do_sample=True)
+            outputs = model.generate(**inputs, max_new_tokens=512, temperature=0.7, top_p=0.9, do_sample=True, seed=42)
 
         response = tokenizer.decode(outputs[0][len(inputs.input_ids[0]):], skip_special_tokens=True)
 
