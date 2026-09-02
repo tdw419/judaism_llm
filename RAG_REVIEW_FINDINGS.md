@@ -93,25 +93,68 @@ A comprehensive review identified critical bugs in the RAG system that invalidat
 - Citations: Less likely to hallucinate (but not fully verified)
 
 **Remaining Work:**
-- Run improved evaluation (run_phase6_improved.py) - needs GPU
+- ✓ Improved evaluation complete (10 queries, commit 9a7db66)
 - Address high-priority issues (#4-13)
 - Update .gitignore and deployment configs
 
-## Metrics (To Be Measured)
+## Metrics (Final Results)
 
-After running run_phase6_improved.py:
-- Grounding Score: TBD (target >70%)
-- Concept Coverage: TBD (target >70%)
-- Response Quality: TBD
+After improved evaluation with 10 queries:
+
+- **Grounding Score:** 30.0% (response n-grams in retrieved context)
+- **Concept Coverage:** 36.8% (expected concepts in responses)
+- **Average Response Length:** 1,645 characters
+- **Grounded Queries:** 3/10
+
+**Grounded Queries:**
+- What is Teshuva? ✓ (51.8% 5-gram, 3/4 concepts)
+- Main sources of Jewish law? ✓ (36.9% 5-gram, 4/4 concepts)
+- Rosh Hashanah? ✓ (34.0% 5-gram, 1/4 concepts)
+
+**Not Grounded (7/10):**
+- Explain Shabbat (10.9% 5-gram) - Beitzah commentary irrelevant
+- Torah (0.0% 5-gram) - single-word query fails
+- Mishnah (2.1% 5-gram) - single-word query fails
+- Kashrut (0.0% 5-gram, 4/4 concepts) - model knowledge, no context use
+- Yom Kippur (0.0% 5-gram) - single-word query fails
+- Pesach (1.8% 5-gram) - single-word query fails
+- Ten Commandments (0.0% 5-gram) - retrieval fails
+
+**Additional Fixes Applied:**
+- HTML stripping (commit 94dd471) - Improved English segments (450→5,176)
+- Expanded eval set (5→10 queries)
+- Removed invalid seed kwarg
+
+**Corpus Impact (HTML stripped):**
+- Hebrew segments: 11,614 (↓ from 16,903)
+- English segments: 5,176 (↑ from 450)
+- Total: 16,790 (↓ from 18,453)
+
+## System Quality (Final)
+
+**Retrieval:** Functional but poor quality (30% grounding)
+**Grounding:** Measurable but low (addressable with retrieval improvements)
+**Citations:** Less likely to hallucinate (but not fully verified)
+
+**Status:** RAG system works but retrieval quality needs improvement
+
+## Next Steps
+
+1. Increase top_k (5→10) to improve retrieval
+2. Improve embedding model quality
+3. Query expansion for single-word Hebrew queries
+4. Boundary-aware chunking (mid-word cuts destroy coherence)
+5. Fix Docker deployment (#5)
+6. Update .gitignore (#4)
 
 ## Conclusions
 
-The RAG system is no longer "production-ready with accurate citations." However, the critical retrieval bug (#1) has been fixed, making it possible to actually retrieve and use text. The improved evaluation metrics (#3) will validate whether responses are grounded in retrieved context.
+The RAG system is functionally working but not "production-ready." Critical retrieval bug (#1) has been fixed, and evaluation shows 30% grounding with 3/10 queries grounded. HTML stripping improved the corpus but didn't fix core retrieval quality.
 
-**Status: Functionally working, needs evaluation and deployment fixes**
+**Status: Working prototype, needs retrieval quality improvements**
 
 **Next Steps:**
-1. Run improved evaluation (when GPU available)
+1. Improve retrieval (increase top_k, better embeddings, query expansion)
 2. Address .gitignore and reproduction issues
 3. Fix Docker deployment
 4. Validate citation accuracy with real examples
