@@ -3,24 +3,24 @@
 ## Overview
 
 - **Total Queries:** 10
-- **Grounding Score:** 30.0% (response n-grams in retrieved context)
-- **Concept Coverage:** 31.6% (expected concepts in responses)
-- **Average Response Length:** 1790 characters
+- **Grounding Score:** 20.0% (response n-grams in retrieved context)
+- **Concept Coverage:** 2.6% (expected concepts in responses)
+- **Average Response Length:** 215 characters
 
 ## Test Results
 
 | Query | Response Length | Grounding (5-gram) | Grounding (3-gram) | Is Grounded? | Concepts Covered |
 |-------|----------------|-------------------|-------------------|--------------|------------------|
-| What is Teshuva? | 2010 | 49.8% | 54.5% | ✓ | 3/4 |
-| Explain Shabbat | 2378 | 2.5% | 10.3% | ✗ | 0/4 |
-| What are the main sources of Jewish law? | 1750 | 25.0% | 30.6% | ✓ | 3/4 |
-| תורה | 1762 | 0.0% | 0.0% | ✗ | 0/3 |
-| משנה | 2121 | 0.0% | 0.0% | ✗ | 0/3 |
-| What is the significance of Rosh Hashanah? | 2401 | 19.0% | 23.2% | ✗ | 2/4 |
-| Explain the concept of Kashrut | 1927 | 0.0% | 0.0% | ✗ | 3/4 |
-| מה המשמעות של יום כיפור | 1113 | 31.0% | 35.8% | ✓ | 0/4 |
-| פסח | 1084 | 18.7% | 24.3% | ✗ | 0/4 |
-| What are the Ten Commandments? | 1359 | 0.0% | 3.9% | ✗ | 1/4 |
+| What is Teshuva? | 419 | 44.3% | 46.0% | ✓ | 1/4 |
+| Explain Shabbat | 51 | 0.0% | 0.0% | ✗ | 0/4 |
+| What are the main sources of Jewish law? | 51 | 0.0% | 0.0% | ✗ | 0/4 |
+| תורה | 51 | 0.0% | 0.0% | ✗ | 0/3 |
+| משנה | 51 | 0.0% | 0.0% | ✗ | 0/3 |
+| What is the significance of Rosh Hashanah? | 51 | 0.0% | 0.0% | ✗ | 0/4 |
+| Explain the concept of Kashrut | 51 | 0.0% | 0.0% | ✗ | 0/4 |
+| מה המשמעות של יום כיפור | 1325 | 25.0% | 37.0% | ✓ | 0/4 |
+| פסח | 51 | 0.0% | 0.0% | ✗ | 0/4 |
+| What are the Ten Commandments? | 51 | 0.0% | 0.0% | ✗ | 0/4 |
 
 ## Metric Definitions
 

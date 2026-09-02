@@ -15,6 +15,7 @@ import sys
 import re
 
 from retrieval import retrieve
+from prompts import build_messages
 
 # Configuration
 CHROMA_DIR = "chroma_db"
@@ -249,20 +250,14 @@ def main():
         context_parts = []
         sources = []
 
+        metadatas = r_results['metadatas'][0]
+        documents = r_results['documents'][0]
         for j in range(len(r_results['ids'][0])):
-            metadata = r_results['metadatas'][0][j]
-            document = r_results['documents'][0][j]
+            context_parts.append(documents[j])
+            sources.append(metadatas[j]['source'])
 
-            context_parts.append(document)
-            sources.append(metadata['source'])
-
-        context = "\n---\n".join(context_parts)
-
-        # Generate response
-        messages = [
-            {"role": "system", "content": "You are Judaism LLM. Answer based on texts with citations."},
-            {"role": "user", "content": f"Texts:\n{context}\n\nQuestion: {query}\n\nAnswer with citations."}
-        ]
+        # Generate response (extractive: verbatim-quote, cite, or refuse)
+        messages = build_messages(query, documents, metadatas)
 
         text = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
         inputs = tokenizer(text, return_tensors="pt").to(model.device)
