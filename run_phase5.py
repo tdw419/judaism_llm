@@ -13,6 +13,8 @@ from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 import sys
 
+from prompts import build_messages
+
 # Configuration
 CHROMA_DIR = "chroma_db"
 COLLECTION_NAME = "sefaria_texts"
@@ -152,24 +154,15 @@ async def query(request: dict):
         if not results['ids'][0]:
             return {"error": "No relevant passages found"}
 
-        # Context assembly
-        context_parts = []
+        # Source list for the response payload
         sources = []
 
         for i in range(len(results['ids'][0])):
             metadata = results['metadatas'][0][i]
-            document = results['documents'][0][i]
-            source_info = f"[{metadata['source']}]"
-            context_parts.append(f"{source_info} {document}")
             sources.append(f"{metadata['source']} ({metadata['language']})")
 
-        context = "\n---\n".join(context_parts)
-
-        # Generation
-        messages = [
-            {"role": "system", "content": "You are Judaism LLM, trained on Sefaria. Answer based on texts with citations."},
-            {"role": "user", "content": f"Texts:\n{context}\n\nQuestion: {query}\n\nAnswer with citations."}
-        ]
+        # Generation (extractive: verbatim-quote, cite, or refuse)
+        messages = build_messages(query, results['documents'][0], results['metadatas'][0])
 
         text = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
         inputs = tokenizer(text, return_tensors="pt").to(model.device)

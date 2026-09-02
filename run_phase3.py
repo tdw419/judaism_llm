@@ -12,6 +12,8 @@ import json
 import sys
 from pathlib import Path
 
+from prompts import build_messages
+
 # Configuration
 CHROMA_DIR = "chroma_db"
 COLLECTION_NAME = "sefaria_texts"
@@ -48,16 +50,12 @@ def rag_query(query, model, tokenizer, embedding_model, collection):
     if not results['ids'][0]:
         return {"error": "No relevant passages found", "sources": []}
 
-    # Step 3: Context assembly
-    context_parts = []
+    # Step 3: Source list for the response payload
     sources = []
 
     for i in range(len(results['ids'][0])):
         metadata = results['metadatas'][0][i]
-        document = results['documents'][0][i]
 
-        source_info = f"[Source: {metadata['source']}, Category: {metadata['category']}, Language: {metadata['language']}]"
-        context_parts.append(f"{source_info}\n{document}\n")
         sources.append({
             "source": metadata['source'],
             "category": metadata['category'],
@@ -65,19 +63,12 @@ def rag_query(query, model, tokenizer, embedding_model, collection):
             "chunk_id": metadata['chunk_id']
         })
 
-    context = "\n---\n".join(context_parts)
-
-    # Step 4: Generation with Judaism LLM
-    messages = [
-        {
-            "role": "system",
-            "content": "You are Judaism LLM, trained on Sefaria corpus. Answer questions based on the provided Sefaria texts. Include citations."
-        },
-        {
-            "role": "user",
-            "content": f"Based on these Sefaria texts:\n\n{context}\n\nAnswer the question: {query}\n\nInclude citations from the passages."
-        }
-    ]
+    # Step 4: Generation with Judaism LLM (extractive: verbatim-quote, cite, or refuse)
+    messages = build_messages(
+        query,
+        results['documents'][0],
+        results['metadatas'][0],
+    )
 
     text = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
     inputs = tokenizer(text, return_tensors="pt").to(model.device)
