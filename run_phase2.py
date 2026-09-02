@@ -41,8 +41,15 @@ def main():
             metadata.append(json.loads(line))
     print(f"Loaded {len(metadata)} metadata entries")
 
-    if len(embeddings) != len(metadata):
-        print(f"Error: Mismatch between embeddings ({len(embeddings)}) and metadata ({len(metadata)})")
+    print(f"Loading segments text from segments.jsonl...")
+    segments = []
+    with open("segments.jsonl", 'r', encoding='utf-8') as f:
+        for line in f:
+            segments.append(json.loads(line))
+    print(f"Loaded {len(segments)} segments with text")
+
+    if len(embeddings) != len(metadata) or len(embeddings) != len(segments):
+        print(f"Error: Mismatch between embeddings ({len(embeddings)}), metadata ({len(metadata)}), and segments ({len(segments)})")
         return False
 
     # Setup ChromaDB
@@ -73,7 +80,7 @@ def main():
         batch_embeddings = embeddings[i:batch_end].tolist()
         batch_ids = [f"seg_{j}" for j in range(i, batch_end)]
         batch_metadata = [metadata[j] for j in range(i, batch_end)]
-        batch_documents = [batch_metadata[k - i]['chunk_id'] for k in range(i, batch_end)]
+        batch_documents = [segments[j]['text'] for j in range(i, batch_end)]
 
         collection.add(
             embeddings=batch_embeddings,
