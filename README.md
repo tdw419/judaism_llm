@@ -127,6 +127,25 @@ The model demonstrates:
 - Not suitable for complex legal decisions (consult a Rabbi)
 - English responses may be more detailed than Hebrew
 
+## Recommended: Retrieval-Grounded RAG Pipeline
+
+Used standalone, this model generates fluent text but can fabricate citations.
+We strongly recommend running it with the companion **RAG pipeline**
+(https://github.com/tdw419/judaism_llm, branch `roadmap-execution`), which
+changes the failure mode fundamentally:
+
+- **Hybrid retrieval** (dense + lexical) over ~16.8K Sefaria segments,
+  including query expansion for single-word Hebrew queries
+- **Extractive generation prompt**: every substantive claim must be a
+  verbatim quotation from retrieved passages, cited as [N]
+- **Conditional refusal**: when no retrieved passage relates to the
+  question, the model says so instead of inventing an answer
+
+With the RAG pipeline, responses are grounded verbatim quotes with citations,
+or an honest refusal — no fabricated sources. Evaluation (grounding via
+n-gram overlap against retrieved context) and the full prompt/retrieval
+implementation are in the repo.
+
 ## Ethical Considerations
 
 - This model should not be used for religious legal decisions (p'sak halacha)
