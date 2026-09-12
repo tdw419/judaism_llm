@@ -12,16 +12,51 @@ import sys
 sys.path.insert(0, os.path.dirname(__file__))
 from prompts import build_messages
 from retrieval import retrieve
+from els_search import load_torah, search_all_books, render_matrix
+from gematria import find_skip_sum, find_verses_with_value, load_numeric_torah, word_value
 
 MODEL_ID = "tdw419/judaism-llm-qwen2.5-7b"
 DATASET_ID = "tdw419/judaism-llm-rag-corpus"
 EMBEDDING_MODEL = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+
+ELS_DISCLAIMER = (
+    "NOTE: ELS 'Bible code' matches are a statistical artifact of searching "
+    "long texts with many free parameters (skip, direction, spelling). McKay, "
+    "Bar-Natan, Bar-Hillel & Kalai (Statistical Science, 1999) found equally "
+    "'significant' matches in Moby Dick using the same method as the original "
+    "Witztum-Rips study. Treat this as a text-search toy, not a prediction tool."
+)
+
+GEMATRIA_DISCLAIMER = (
+    "NOTE: gematria 'hidden code' searches (verse sums, equidistant sums "
+    "matching a target number) are exploratory pattern-matching, not "
+    "validated discoveries -- with free choice of target, skip, and run "
+    "length, matches are expected by chance in any long text. Traditional "
+    "gematria word-values themselves are a real, long-used feature of "
+    "Jewish textual tradition; 'hidden codes' built on top of them are not."
+)
 
 # Globals (lazy-loaded on startup)
 embedding_model = None
 model = None
 tokenizer = None
 collection = None
+_torah_cache = None
+_numeric_torah_cache = None
+
+
+def _get_torah():
+    global _torah_cache
+    if _torah_cache is None:
+        _torah_cache = load_torah()
+    return _torah_cache
+
+
+def _get_numeric_torah():
+    global _numeric_torah_cache
+    if _numeric_torah_cache is None:
+        _numeric_torah_cache = load_numeric_torah()
+    return _numeric_torah_cache
 
 
 def load_all():
@@ -77,15 +112,151 @@ def respond(query, history):
     return f"{response}\n\n---\nSources:\n{src}"
 
 
+def els_search_ui(word, min_skip, max_skip):
+    word = (word or "").strip()
+    if not word:
+        return "Enter a Hebrew word to search for."
+    try:
+        min_skip, max_skip = int(min_skip), int(max_skip)
+    except ValueError:
+        return "Skip range must be integers."
+
+    torah = _get_torah()
+    matches = search_all_books(torah, word, min_skip, max_skip)
+    lines = [ELS_DISCLAIMER, "",
+             f"Found {len(matches)} match(es) for '{word}' across skips [{min_skip}, {max_skip}]", ""]
+    for m in matches[:10]:
+        lines.append(f"  {m.book} skip={m.skip:+d}  {m.start_ref[0]}:{m.start_ref[1]} -> {m.end_ref[0]}:{m.end_ref[1]}")
+
+    if not matches:
+        return "\n".join(lines)
+
+    top = matches[0]
+    lines.append("")
+    lines.append(render_matrix(torah[top.book], top))
+
+    if collection is not None:
+        query = f"{top.book} {top.start_ref[0]}:{top.start_ref[1]} {word}"
+        r = retrieve(query, collection, embedding_model, top_k=3)
+        docs = r["documents"][0] if r.get("documents") else []
+        metas = r["metadatas"][0] if r.get("metadatas") else []
+        if docs:
+            lines.append("")
+            lines.append(f"Related commentary near {top.book} {top.start_ref[0]}:{top.start_ref[1]}:")
+            for i, (doc, meta) in enumerate(zip(docs, metas), start=1):
+                src = (meta or {}).get("source", "?")
+                snippet = (doc or "").strip().replace("\n", " ")[:200]
+                lines.append(f"  [{i}] ({src}) {snippet}...")
+
+    return "\n".join(lines)
+
+
+def gematria_word_ui(word):
+    word = (word or "").strip()
+    if not word:
+        return "Enter a Hebrew word."
+    return f"{GEMATRIA_DISCLAIMER}\n\n{word} = {word_value(word)}"
+
+
+def gematria_verse_sum_ui(target, limit):
+    try:
+        target, limit = int(target), int(limit)
+    except ValueError:
+        return "Target and limit must be integers."
+
+    torah = _get_numeric_torah()
+    lines = [GEMATRIA_DISCLAIMER, ""]
+    count = 0
+    for title, nbook in torah.items():
+        for ch, vs, total in find_verses_with_value(nbook, target):
+            lines.append(f"  {title} {ch}:{vs} = {total}")
+            count += 1
+            if count >= limit:
+                break
+        if count >= limit:
+            break
+    lines.append(f"\n({count} match(es) shown, limit={limit})")
+    return "\n".join(lines)
+
+
+def gematria_skip_sum_ui(target, length, min_skip, max_skip, limit):
+    try:
+        target, length, min_skip, max_skip, limit = (
+            int(target), int(length), int(min_skip), int(max_skip), int(limit)
+        )
+    except ValueError:
+        return "All fields must be integers."
+
+    torah = _get_numeric_torah()
+    lines = [GEMATRIA_DISCLAIMER, ""]
+    count = 0
+    for title, nbook in torah.items():
+        for m in find_skip_sum(nbook, target, length, min_skip, max_skip):
+            lines.append(f"  {m.book} skip={m.skip:+d} len={m.length}  "
+                          f"{m.start_ref[0]}:{m.start_ref[1]} -> {m.end_ref[0]}:{m.end_ref[1]} = {m.total}")
+            count += 1
+            if count >= limit:
+                break
+        if count >= limit:
+            break
+    lines.append(f"\n({count} match(es) shown, limit={limit})")
+    return "\n".join(lines)
+
+
 if os.environ.get("HF_SPACE") == "1" or True:  # always preload in Space
     load_all()
 
-demo = gr.ChatInterface(
-    fn=respond,
-    title="Judaism LLM — Sefaria RAG",
-    description="Ask about Jewish texts. Answers are verbatim quotes from retrieved Sefaria passages with [N] citations, or an honest refusal if nothing retrieved is relevant.",
-    examples=["What is Teshuva?", "מה המשמעות של יום כיפור", "Explain Shabbat", "תורה"],
-)
+with gr.Blocks(title="Judaism LLM — Sefaria RAG") as demo:
+    with gr.Tab("Chat"):
+        gr.ChatInterface(
+            fn=respond,
+            title="Judaism LLM — Sefaria RAG",
+            description="Ask about Jewish texts. Answers are verbatim quotes from retrieved Sefaria passages with [N] citations, or an honest refusal if nothing retrieved is relevant.",
+            examples=["What is Teshuva?", "מה המשמעות של יום כיפור", "Explain Shabbat", "תורה"],
+        )
+
+    with gr.Tab("ELS Search"):
+        gr.Markdown(
+            "### Equidistant Letter Sequence ('Bible code') search\n"
+            + ELS_DISCLAIMER
+        )
+        els_word = gr.Textbox(label="Hebrew word", placeholder="תורה")
+        with gr.Row():
+            els_min = gr.Number(label="Min skip", value=-100, precision=0)
+            els_max = gr.Number(label="Max skip", value=100, precision=0)
+        els_button = gr.Button("Search")
+        els_output = gr.Textbox(label="Results", lines=20)
+        els_button.click(els_search_ui, [els_word, els_min, els_max], els_output)
+
+    with gr.Tab("Gematria"):
+        gr.Markdown("### Traditional gematria (mispar hechrachi) numeric search\n" + GEMATRIA_DISCLAIMER)
+        with gr.Tab("Word value"):
+            gem_word = gr.Textbox(label="Hebrew word", placeholder="תורה")
+            gem_word_button = gr.Button("Compute")
+            gem_word_output = gr.Textbox(label="Result")
+            gem_word_button.click(gematria_word_ui, [gem_word], gem_word_output)
+
+        with gr.Tab("Verse sum search"):
+            gem_vs_target = gr.Number(label="Target value", value=611, precision=0)
+            gem_vs_limit = gr.Number(label="Max results", value=10, precision=0)
+            gem_vs_button = gr.Button("Search")
+            gem_vs_output = gr.Textbox(label="Results", lines=15)
+            gem_vs_button.click(gematria_verse_sum_ui, [gem_vs_target, gem_vs_limit], gem_vs_output)
+
+        with gr.Tab("Skip sum search"):
+            gem_ss_target = gr.Number(label="Target sum", value=26, precision=0)
+            with gr.Row():
+                gem_ss_length = gr.Number(label="Run length (letters)", value=3, precision=0)
+                gem_ss_min = gr.Number(label="Min skip", value=-50, precision=0)
+                gem_ss_max = gr.Number(label="Max skip", value=50, precision=0)
+            gem_ss_limit = gr.Number(label="Max results", value=10, precision=0)
+            gem_ss_button = gr.Button("Search")
+            gem_ss_output = gr.Textbox(label="Results", lines=15)
+            gem_ss_button.click(
+                gematria_skip_sum_ui,
+                [gem_ss_target, gem_ss_length, gem_ss_min, gem_ss_max, gem_ss_limit],
+                gem_ss_output,
+            )
 
 if __name__ == "__main__":
     demo.launch()
