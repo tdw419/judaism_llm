@@ -132,6 +132,54 @@ def search_all_books(
     return matches
 
 
+def render_matrix(
+    book: BookText,
+    match: ELSMatch,
+    width: int | None = None,
+    row_margin: int = 1,
+    col_margin: int = 3,
+) -> str:
+    """Render a 2D cylinder letter grid around an ELS match.
+
+    When width is omitted, defaults to abs(match.skip) (or 20 if |skip| == 1),
+    which vertically aligns the letters of the matched word into a single column.
+    """
+    if width is None:
+        width = abs(match.skip) if abs(match.skip) > 1 else 20
+    W = width
+    target_indices = set(match.start_index + i * match.skip for i in range(len(match.word)))
+    min_idx = min(target_indices)
+    max_idx = max(target_indices)
+    min_row = min_idx // W
+    max_row = max_idx // W
+    target_col = match.start_index % W
+
+    r_start = max(0, min_row - row_margin)
+    r_end = min((len(book.letters) - 1) // W, max_row + row_margin)
+    c_start = max(0, target_col - col_margin)
+    c_end = min(W - 1, target_col + col_margin)
+
+    lines = [
+        f"2D Matrix Grid (Width={W}, Rows {r_start}..{r_end}, Cols {c_start}..{c_end}):"
+    ]
+    for r in range(r_start, r_end + 1):
+        row_chars = []
+        for c in range(c_start, c_end + 1):
+            idx = r * W + c
+            if idx < len(book.letters):
+                ch = book.letters[idx]
+                if idx in target_indices:
+                    row_chars.append(f"[{ch}]")
+                else:
+                    row_chars.append(f" {ch} ")
+            else:
+                row_chars.append("   ")
+        ref_idx = min(r * W + c_start, len(book.letters) - 1)
+        ref = book.positions[ref_idx] if book.positions else (0, 0)
+        lines.append(f"Row {r:3d} ({ref[0]}:{ref[1]:2d}) | " + "".join(row_chars))
+    return "\n".join(lines)
+
+
 if __name__ == "__main__":
     import argparse
 
@@ -140,6 +188,7 @@ if __name__ == "__main__":
     parser.add_argument("--min-skip", type=int, default=-1000)
     parser.add_argument("--max-skip", type=int, default=1000)
     parser.add_argument("--limit", type=int, default=20, help="max matches to print")
+    parser.add_argument("--matrix", action="store_true", help="render 2D letter grid for first match")
     args = parser.parse_args()
 
     print(
@@ -157,3 +206,8 @@ if __name__ == "__main__":
             f"  {m.book} skip={m.skip:+d}  "
             f"{m.book} {m.start_ref[0]}:{m.start_ref[1]} -> {m.end_ref[0]}:{m.end_ref[1]}"
         )
+
+    if args.matrix and results:
+        top_match = results[0]
+        book = torah[top_match.book]
+        print("\n" + render_matrix(book, top_match) + "\n")

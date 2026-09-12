@@ -11,7 +11,7 @@ import sys
 import re
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "bible_codes"))
-from els_search import load_torah, search_all_books  # noqa: E402
+from els_search import load_torah, render_matrix, search_all_books  # noqa: E402
 from gematria import find_skip_sum, find_verses_with_value, load_numeric_torah, word_value  # noqa: E402
 from prompts import build_messages  # noqa: E402
 
@@ -157,6 +157,8 @@ def handle_els_command(command, model, tokenizer, torah_cache):
         return torah_cache
 
     top = matches[0]
+    print("\n" + render_matrix(torah_cache[top.book], top) + "\n")
+
     collection, embedding_model, retrieve = _load_els_collection()
     if collection is None:
         return torah_cache
@@ -176,8 +178,13 @@ def handle_els_command(command, model, tokenizer, torah_cache):
         f"what does classical commentary say about this verse?",
         docs, metas,
     )
-    print(generate_from_messages(model, tokenizer, messages).strip())
-    print("\n" + "-" * 70 + "\n")
+    if model is None or tokenizer is None:
+        for i, (doc, meta) in enumerate(zip(docs, metas), start=1):
+            src = meta.get("source", "Unknown")
+            print(f"  [{i}] ({src}): {doc[:160]}...\n")
+    else:
+        print(generate_from_messages(model, tokenizer, messages).strip())
+    print("-" * 70 + "\n")
     return torah_cache
 
 

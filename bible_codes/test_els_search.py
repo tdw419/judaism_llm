@@ -46,6 +46,22 @@ def test_position_index_maps_to_correct_verse():
     assert book.positions[6] == (2, 1)
 
 
+def test_render_matrix_highlights_letters():
+    from els_search import render_matrix
+    # letters:  א  ב  ג  ד  ה  ו  ז  ח  ט
+    # row 0:    א  ב  ג
+    # row 1:    ד  ה  ו
+    # row 2:    ז  ח  ט
+    # skip=3 from index 1 (ב) gives ב(1), ה(4), ח(7) -> "בהח"
+    book = BookText.from_chapters("Test", [["אבגדהוזחט"]])
+    matches = list(find_els(book, "בהח", min_skip=3, max_skip=3))
+    assert len(matches) == 1
+    grid = render_matrix(book, matches[0], width=3, row_margin=0, col_margin=1)
+    assert "[ב]" in grid
+    assert "[ה]" in grid
+    assert "[ח]" in grid
+
+
 if __name__ == "__main__":
     import sys
 
