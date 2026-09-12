@@ -65,8 +65,8 @@ def respond(query, history):
     if collection is None:
         return "Still loading models, try again in a minute..."
     r = retrieve(query, collection, embedding_model, top_k=5)
-    docs = r["documents"]
-    metas = r["metadatas"]
+    docs = r["documents"][0] if r.get("documents") else []
+    metas = r["metadatas"][0] if r.get("metadatas") else []
     messages = build_messages(query, docs, metas)
     text = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
     inputs = tokenizer(text, return_tensors="pt").to(model.device)

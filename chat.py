@@ -164,7 +164,8 @@ def handle_els_command(command, model, tokenizer, torah_cache):
     print(f"\nLooking up commentary near {top.book} {top.start_ref[0]}:{top.start_ref[1]}...\n")
     query = f"{top.book} {top.start_ref[0]}:{top.start_ref[1]} {word}"
     r = retrieve(query, collection, embedding_model, top_k=3)
-    docs, metas = r["documents"], r["metadatas"]
+    docs = r["documents"][0] if r.get("documents") else []
+    metas = r["metadatas"][0] if r.get("metadatas") else []
     if not docs:
         print("No related commentary found in the RAG corpus.")
         return torah_cache

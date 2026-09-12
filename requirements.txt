@@ -1,6 +1,7 @@
 
 # RAG System Requirements
 chromadb>=1.5.0
+protobuf>=5.26.0
 sentence-transformers>=2.2.0
 transformers>=4.30.0
 torch>=2.0.0
