@@ -39,6 +39,7 @@ outputs/
 # Scratch / unrelated
 data_audit.txt
 data-science/
+*.db
 
 # Logs
 logs/
