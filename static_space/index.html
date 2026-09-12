@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Torah Bible Codes Explorer</title>
+<style>
+  :root {
+    --bg: #faf8f4; --fg: #1a1a1a; --muted: #6b6558; --border: #ddd6c8;
+    --accent: #8b5a2b; --card: #ffffff; --mono-bg: #f2efe7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #1a1814; --fg: #ece7db; --muted: #a39d8c; --border: #3a352c; --accent: #d0a06a; --card: #232019; --mono-bg: #16140f; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 24px 16px; background: var(--bg); color: var(--fg);
+         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  main { max-width: 780px; margin: 0 auto; }
+  h1 { font-size: 1.4rem; margin-bottom: 4px; }
+  .subtitle { color: var(--muted); font-size: 0.9rem; margin-bottom: 16px; }
+  .disclaimer { background: var(--mono-bg); border: 1px solid var(--border); border-radius: 8px;
+                padding: 12px 14px; font-size: 0.82rem; color: var(--muted); margin-bottom: 20px; }
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+  .tab-btn { background: none; border: none; padding: 10px 16px; cursor: pointer; color: var(--muted);
+             font-size: 0.95rem; border-bottom: 2px solid transparent; }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+  label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 4px; }
+  input[type=text], input[type=number] {
+    width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--bg); color: var(--fg); font-size: 1rem; margin-bottom: 12px;
+  }
+  input[dir=rtl] { text-align: right; font-size: 1.2rem; }
+  .row { display: flex; gap: 12px; }
+  .row > div { flex: 1; }
+  button.run { background: var(--accent); color: #fff; border: none; border-radius: 6px;
+               padding: 10px 18px; font-size: 0.95rem; cursor: pointer; }
+  button.run:hover { opacity: 0.9; }
+  .sub-tabs { display: flex; gap: 4px; margin-bottom: 12px; }
+  .sub-tab-btn { background: var(--mono-bg); border: 1px solid var(--border); border-radius: 6px;
+                 padding: 6px 12px; cursor: pointer; color: var(--fg); font-size: 0.85rem; }
+  .sub-tab-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .sub-panel { display: none; }
+  .sub-panel.active { display: block; }
+  pre.output { background: var(--mono-bg); border: 1px solid var(--border); border-radius: 8px;
+               padding: 12px; font-size: 0.82rem; line-height: 1.5; overflow-x: auto;
+               white-space: pre-wrap; word-break: break-word; direction: rtl; text-align: left; unicode-bidi: plaintext; }
+  #loadStatus { color: var(--muted); font-size: 0.85rem; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Torah Bible Codes Explorer</h1>
+  <div class="subtitle">Equidistant Letter Sequence (ELS) search and gematria numeric search over the full Hebrew Torah.</div>
+  <div class="disclaimer">
+    <strong>Disclaimer:</strong> ELS "Bible code" matches and gematria "hidden code" searches are
+    exploratory pattern-matching, not validated discoveries. McKay, Bar-Natan, Bar-Hillel &amp; Kalai
+    (Statistical Science, 1999) showed the same methodology finds equally "significant" matches in
+    non-religious texts (e.g. Moby Dick) as in the Torah — the original Witztum-Rips claims did not
+    hold up. Treat this as a text-search toy, not a prediction tool.
+  </div>
+
+  <div id="loadStatus">Loading Torah text…</div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="els">ELS Search</button>
+    <button class="tab-btn" data-tab="gematria">Gematria</button>
+  </div>
+
+  <div id="els" class="panel active">
+    <div class="card">
+      <label for="elsWord">Hebrew word</label>
+      <input type="text" id="elsWord" dir="rtl" placeholder="תורה" value="תורה" />
+      <div class="row">
+        <div>
+          <label for="elsMin">Min skip</label>
+          <input type="number" id="elsMin" value="-100" />
+        </div>
+        <div>
+          <label for="elsMax">Max skip</label>
+          <input type="number" id="elsMax" value="100" />
+        </div>
+      </div>
+      <button class="run" id="elsRun">Search</button>
+    </div>
+    <pre class="output" id="elsOutput"></pre>
+  </div>
+
+  <div id="gematria" class="panel">
+    <div class="sub-tabs">
+      <button class="sub-tab-btn active" data-sub="word">Word value</button>
+      <button class="sub-tab-btn" data-sub="versesum">Verse sum</button>
+      <button class="sub-tab-btn" data-sub="skipsum">Skip sum</button>
+    </div>
+
+    <div id="word" class="sub-panel active">
+      <div class="card">
+        <label for="gemWord">Hebrew word</label>
+        <input type="text" id="gemWord" dir="rtl" placeholder="תורה" value="תורה" />
+        <button class="run" id="gemWordRun">Compute</button>
+      </div>
+      <pre class="output" id="gemWordOutput"></pre>
+    </div>
+
+    <div id="versesum" class="sub-panel">
+      <div class="card">
+        <label for="gemVsTarget">Target value</label>
+        <input type="number" id="gemVsTarget" value="611" />
+        <label for="gemVsLimit">Max results</label>
+        <input type="number" id="gemVsLimit" value="10" />
+        <button class="run" id="gemVsRun">Search</button>
+      </div>
+      <pre class="output" id="gemVsOutput"></pre>
+    </div>
+
+    <div id="skipsum" class="sub-panel">
+      <div class="card">
+        <label for="gemSsTarget">Target sum</label>
+        <input type="number" id="gemSsTarget" value="26" />
+        <div class="row">
+          <div>
+            <label for="gemSsLength">Run length</label>
+            <input type="number" id="gemSsLength" value="3" />
+          </div>
+          <div>
+            <label for="gemSsMin">Min skip</label>
+            <input type="number" id="gemSsMin" value="-50" />
+          </div>
+          <div>
+            <label for="gemSsMax">Max skip</label>
+            <input type="number" id="gemSsMax" value="50" />
+          </div>
+        </div>
+        <label for="gemSsLimit">Max results</label>
+        <input type="number" id="gemSsLimit" value="10" />
+        <button class="run" id="gemSsRun">Search</button>
+      </div>
+      <pre class="output" id="gemSsOutput"></pre>
+    </div>
+  </div>
+</main>
+
+<script src="app.js"></script>
+<script>
+const ELS_DISCLAIMER =
+  "NOTE: ELS 'Bible code' matches are a statistical artifact of searching long texts with many " +
+  "free parameters (skip, direction, spelling). Treat this as a text-search toy, not a prediction tool.";
+const GEMATRIA_DISCLAIMER =
+  "NOTE: gematria 'hidden code' searches are exploratory pattern-matching, not validated discoveries " +
+  "-- with free choice of target, skip, and run length, matches are expected by chance in any long text.";
+
+let BOOKS = null;
+
+async function loadTorah() {
+  const res = await fetch("data/torah_full.json");
+  const raw = await res.json();
+  BOOKS = window.BibleCodes.buildBooks(raw);
+  document.getElementById("loadStatus").textContent =
+    `Loaded ${Object.keys(BOOKS).length} books, ` +
+    `${Object.values(BOOKS).reduce((s, b) => s + b.letters.length, 0).toLocaleString()} consonants.`;
+}
+
+function setupTabs(tabSelector, panelPrefix, attr) {
+  document.querySelectorAll(tabSelector).forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(tabSelector).forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      const target = btn.getAttribute(attr);
+      document.querySelectorAll(`.${panelPrefix}`).forEach((p) => p.classList.remove("active"));
+      document.getElementById(target).classList.add("active");
+    });
+  });
+}
+setupTabs(".tab-btn", "panel", "data-tab");
+setupTabs(".sub-tab-btn", "sub-panel", "data-sub");
+
+document.getElementById("elsRun").addEventListener("click", () => {
+  const out = document.getElementById("elsOutput");
+  if (!BOOKS) { out.textContent = "Still loading Torah text…"; return; }
+  const word = document.getElementById("elsWord").value.trim();
+  const minSkip = parseInt(document.getElementById("elsMin").value, 10);
+  const maxSkip = parseInt(document.getElementById("elsMax").value, 10);
+  if (!word) { out.textContent = "Enter a Hebrew word."; return; }
+
+  let allMatches = [];
+  for (const book of Object.values(BOOKS)) {
+    allMatches = allMatches.concat(window.BibleCodes.findEls(book, word, minSkip, maxSkip));
+  }
+
+  const lines = [ELS_DISCLAIMER, "",
+    `Found ${allMatches.length} match(es) for '${word}' across skips [${minSkip}, ${maxSkip}]`, ""];
+  for (const m of allMatches.slice(0, 10)) {
+    lines.push(`  ${m.book} skip=${m.skip > 0 ? "+" : ""}${m.skip}  ${m.startRef[0]}:${m.startRef[1]} -> ${m.endRef[0]}:${m.endRef[1]}`);
+  }
+  if (allMatches.length) {
+    const top = allMatches[0];
+    lines.push("");
+    lines.push(window.BibleCodes.renderMatrix(BOOKS[top.book], top));
+  }
+  out.textContent = lines.join("\n");
+});
+
+document.getElementById("gemWordRun").addEventListener("click", () => {
+  const word = document.getElementById("gemWord").value.trim();
+  const out = document.getElementById("gemWordOutput");
+  if (!word) { out.textContent = "Enter a Hebrew word."; return; }
+  out.textContent = `${GEMATRIA_DISCLAIMER}\n\n${word} = ${window.BibleCodes.wordValue(word)}`;
+});
+
+document.getElementById("gemVsRun").addEventListener("click", () => {
+  const out = document.getElementById("gemVsOutput");
+  if (!BOOKS) { out.textContent = "Still loading Torah text…"; return; }
+  const target = parseInt(document.getElementById("gemVsTarget").value, 10);
+  const limit = parseInt(document.getElementById("gemVsLimit").value, 10);
+  const lines = [GEMATRIA_DISCLAIMER, ""];
+  let count = 0;
+  outer:
+  for (const [title, book] of Object.entries(BOOKS)) {
+    for (const [ch, vs, total] of window.BibleCodes.findVersesWithValue(book, target)) {
+      lines.push(`  ${title} ${ch}:${vs} = ${total}`);
+      count++;
+      if (count >= limit) break outer;
+    }
+  }
+  lines.push(`\n(${count} match(es) shown, limit=${limit})`);
+  out.textContent = lines.join("\n");
+});
+
+document.getElementById("gemSsRun").addEventListener("click", () => {
+  const out = document.getElementById("gemSsOutput");
+  if (!BOOKS) { out.textContent = "Still loading Torah text…"; return; }
+  const target = parseInt(document.getElementById("gemSsTarget").value, 10);
+  const length = parseInt(document.getElementById("gemSsLength").value, 10);
+  const minSkip = parseInt(document.getElementById("gemSsMin").value, 10);
+  const maxSkip = parseInt(document.getElementById("gemSsMax").value, 10);
+  const limit = parseInt(document.getElementById("gemSsLimit").value, 10);
+  const lines = [GEMATRIA_DISCLAIMER, ""];
+  let count = 0;
+  outer:
+  for (const book of Object.values(BOOKS)) {
+    for (const m of window.BibleCodes.findSkipSum(book, target, length, minSkip, maxSkip)) {
+      lines.push(`  ${m.book} skip=${m.skip > 0 ? "+" : ""}${m.skip} len=${m.length}  ${m.startRef[0]}:${m.startRef[1]} -> ${m.endRef[0]}:${m.endRef[1]} = ${m.total}`);
+      count++;
+      if (count >= limit) break outer;
+    }
+  }
+  lines.push(`\n(${count} match(es) shown, limit=${limit})`);
+  out.textContent = lines.join("\n");
+});
+
+loadTorah();
+</script>
+</body>
+</html>
